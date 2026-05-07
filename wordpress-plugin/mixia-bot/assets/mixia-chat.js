@@ -451,7 +451,14 @@
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true',
         },
-        body: JSON.stringify({ session_id: SESSION, mensagem: text }),
+        body: JSON.stringify({
+          session_id: SESSION,
+          mensagem: text,
+          segmento: chosenSegment || null,
+          regiao: chosenLocal || null,
+          uf: null,
+          porte: chosenSize || null,
+        }),
       });
 
       hideTyping();

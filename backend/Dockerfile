@@ -9,6 +9,9 @@ COPY . .
 
 RUN mkdir -p /app/data
 
+# Pré-construir o catálogo SQLite a partir do Excel durante o build
+RUN python catalog.py
+
 EXPOSE 8000
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

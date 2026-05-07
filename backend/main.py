@@ -12,6 +12,7 @@ load_dotenv(override=True)
 
 from agent import chat
 from catalog import DB_PATH, build_catalog, listar_segmentos
+import recomendacoes
 
 ENV_PATH = Path(__file__).parent / ".env"
 bearer = HTTPBearer()
@@ -29,6 +30,7 @@ async def lifespan(app: FastAPI):
     if not DB_PATH.exists():
         print("Construindo catálogo SQLite...")
         build_catalog()
+    recomendacoes.init_db()
     yield
 
 
@@ -47,6 +49,10 @@ sessoes: dict[str, list[dict]] = {}
 class MensagemRequest(BaseModel):
     session_id: str
     mensagem: str
+    segmento: str | None = None
+    regiao: str | None = None
+    uf: str | None = None
+    porte: str | None = None
 
 
 class MensagemResponse(BaseModel):
@@ -71,6 +77,22 @@ async def endpoint_chat(body: MensagemRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
     sessoes[body.session_id] = historico_atualizado
+
+    # Salvar recomendacao se houver produtos
+    if produtos:
+        try:
+            recomendacoes.salvar(
+                session_id=body.session_id,
+                segmento=body.segmento or "",
+                regiao=body.regiao or "",
+                uf=body.uf or "",
+                porte=body.porte or "",
+                produtos=produtos,
+                total=total,
+            )
+        except Exception as e:
+            print(f"[WARN] Erro ao salvar recomendacao: {e}", flush=True)
+
     return MensagemResponse(resposta=resposta, produtos=produtos, total=total, session_id=body.session_id)
 
 
@@ -117,3 +139,46 @@ async def get_segments():
 async def rebuild_catalog(_token: str = Security(verify_admin_token)):
     build_catalog()
     return {"ok": True, "message": "Catálogo reconstruído com sucesso"}
+
+
+# ── Recomendações / Relatórios ──
+
+@app.get("/admin/recomendacoes")
+async def listar_recomendacoes(
+    limit: int = 100,
+    offset: int = 0,
+    _token: str = Security(verify_admin_token),
+):
+    return {"recomendacoes": recomendacoes.listar(limit, offset)}
+
+
+@app.get("/admin/recomendacoes/{rec_id}")
+async def obter_recomendacao(rec_id: int, _token: str = Security(verify_admin_token)):
+    rec = recomendacoes.obter(rec_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recomendacao nao encontrada")
+    return rec
+
+
+@app.get("/admin/recomendacoes/{rec_id}/export")
+async def exportar_recomendacao(rec_id: int, _token: str = Security(verify_admin_token)):
+    from fastapi.responses import StreamingResponse
+    buf = recomendacoes.exportar_excel(rec_id)
+    if not buf:
+        raise HTTPException(status_code=404, detail="Recomendacao nao encontrada")
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=recomendacao_{rec_id}.xlsx"},
+    )
+
+
+@app.get("/admin/recomendacoes-export")
+async def exportar_todas_recomendacoes(limit: int = 500, _token: str = Security(verify_admin_token)):
+    from fastapi.responses import StreamingResponse
+    buf = recomendacoes.exportar_excel_todos(limit)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=recomendacoes_todas.xlsx"},
+    )
