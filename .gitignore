@@ -1,0 +1,25 @@
+# Secrets
+.env
+backend/.env
+
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Data
+backend/catalog.db
+backend/*.xlsx
+
+# Docker volumes
+catalog_data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WordPress plugin ZIP
+wordpress-plugin/*.zip

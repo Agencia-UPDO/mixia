@@ -1,0 +1,26 @@
+services:
+  mixia-backend:
+    build:
+      context: ./backend
+    ports:
+      - "8002:8000"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      WOOCOMMERCE_URL: ${WOOCOMMERCE_URL}
+      WOOCOMMERCE_KEY: ${WOOCOMMERCE_KEY}
+      WOOCOMMERCE_SECRET: ${WOOCOMMERCE_SECRET}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+    volumes:
+      # Planilha montada em read-only — troque o arquivo aqui para atualizar o catálogo
+      - ./Produtos Segmento e Regiao.xlsx:/app/Produtos Segmento e Regiao.xlsx:ro
+      # Catálogo SQLite persistido entre restarts (apenas pasta /app/data)
+      - catalog_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  catalog_data:
