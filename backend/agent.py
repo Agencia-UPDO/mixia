@@ -8,7 +8,7 @@ from woocommerce_client import buscar_produtos_por_skus
 
 load_dotenv(override=True)
 client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = "claude-sonnet-4-6"
 
 TOOLS = [
     {
