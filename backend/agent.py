@@ -62,8 +62,7 @@ TOOLS = [
         "name": "buscar_produtos_woocommerce",
         "description": (
             "Busca informações em tempo real dos produtos no WooCommerce (preço, estoque, imagem, link). "
-            "Sempre retorna Caixa Master ou Display — nunca Unidade individual. "
-            "Use formato_preferido para indicar o melhor formato conforme o perfil da loja."
+            "Retorna sempre Display ou Unidade. NUNCA Caixa Master."
         ),
         "input_schema": {
             "type": "object",
@@ -75,11 +74,10 @@ TOOLS = [
                 },
                 "formato_preferido": {
                     "type": "string",
-                    "enum": ["caixa master", "display"],
+                    "enum": ["display", "unidade"],
                     "description": (
-                        "Formato preferido: 'display' para lojas pequenas, "
-                        "'caixa master' para lojas médias/grandes. "
-                        "Se não tiver o preferido, usa o outro automaticamente."
+                        "Sempre use 'display'. Se o produto não tiver Display, "
+                        "retorna Unidade automaticamente."
                     ),
                 },
             },
@@ -109,7 +107,8 @@ PROIBIDO — QUEBRAR QUALQUER REGRA ABAIXO É FALHA CRÍTICA:
 REGRAS DE NEGÓCIO:
 ══════════════════════════════════════════════════════════════
 - Pedido mínimo: R$ 1.500. O total DEVE ser ≥ R$ 1.500.
-- Loja PEQUENA → priorize Display. MÉDIA/GRANDE → Caixa Master.
+- Formato SEMPRE Display. Se o produto não tiver Display, use Unidade. NUNCA Caixa Master.
+- Mínimo de 8 produtos na recomendação, sempre.
 - Ajuste quantidades para atingir o mínimo. Diversifique o mix.
 
 ══════════════════════════════════════════════════════════════

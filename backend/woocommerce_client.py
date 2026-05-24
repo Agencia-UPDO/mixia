@@ -56,14 +56,13 @@ def _formatar_produto(p: dict, variacao: dict | None = None) -> dict:
     }
 
 
-FORMATOS_BULK = ["caixa master", "display"]
+FORMATOS_PREFERIDOS = ["display", "unidade"]
 
 
-def _buscar_variacao_bulk(produto_id: int, preferencia: str = "caixa master") -> dict | None:
+def _buscar_variacao_display(produto_id: int) -> dict | None:
     """
-    Busca a melhor variação bulk de um produto variável.
-    preferencia: 'caixa master' ou 'display' — tenta esse primeiro, depois o outro.
-    Nunca retorna Unidade ou Inner.
+    Busca a variação Display de um produto variável.
+    Prioridade: Display > Unidade. Nunca retorna Caixa Master.
     """
     wcapi = get_client()
     r = wcapi.get(f"products/{produto_id}/variations", params={"per_page": 20})
@@ -76,15 +75,14 @@ def _buscar_variacao_bulk(produto_id: int, preferencia: str = "caixa master") ->
             if "formato" in attr.get("slug", "").lower():
                 por_formato[attr.get("option", "").lower()] = v
 
-    # Ordem: preferência do agente primeiro, depois fallback para o outro formato bulk
-    ordem = [preferencia.lower()] + [f for f in FORMATOS_BULK if f != preferencia.lower()]
-    for formato in ordem:
+    # Ordem: Display primeiro, depois Unidade. Nunca Caixa Master.
+    for formato in FORMATOS_PREFERIDOS:
         if formato in por_formato:
             return por_formato[formato]
     return None
 
 
-def buscar_produtos_por_skus(skus: list[str], formato_preferido: str = "caixa master") -> list[dict]:
+def buscar_produtos_por_skus(skus: list[str], formato_preferido: str = "display") -> list[dict]:
     """
     Busca produtos no WooCommerce pelos SKUs.
     Para produtos variáveis, busca variações em paralelo (até 8 simultâneas).
@@ -107,7 +105,7 @@ def buscar_produtos_por_skus(skus: list[str], formato_preferido: str = "caixa ma
 
     # Busca variações em paralelo
     def buscar(p):
-        variacao = _buscar_variacao_bulk(p["id"], formato_preferido)
+        variacao = _buscar_variacao_display(p["id"])
         return _formatar_produto(p, variacao)
 
     with ThreadPoolExecutor(max_workers=8) as executor:
