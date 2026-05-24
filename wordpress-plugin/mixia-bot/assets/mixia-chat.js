@@ -281,7 +281,7 @@
   }
 
   function renderProductCard(p) {
-    const badgeClass = p.formato === 'Caixa Master' ? 'mb-badge-master' : 'mb-badge-display';
+    const badgeClass = 'mb-badge-display';
     const imgHtml    = p.imagem
       ? `<img class="mb-product-img" src="${p.imagem}" alt="${escHtml(p.nome)}" loading="lazy">`
       : '<div class="mb-product-img-placeholder">📦</div>';

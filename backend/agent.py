@@ -62,7 +62,7 @@ TOOLS = [
         "name": "buscar_produtos_woocommerce",
         "description": (
             "Busca informações em tempo real dos produtos no WooCommerce (preço, estoque, imagem, link). "
-            "Retorna sempre Display ou Unidade. NUNCA Caixa Master."
+            "Retorna sempre Display ou Unidade."
         ),
         "input_schema": {
             "type": "object",
@@ -97,7 +97,7 @@ PROIBIDO — QUEBRAR QUALQUER REGRA ABAIXO É FALHA CRÍTICA:
 4. NUNCA use ✅ ❌ ⚠️ como indicador de status.
 5. NUNCA faça perguntas ("Posso ajustar?", "Deseja algo mais?").
 6. NUNCA mostre contagem de unidades em estoque.
-7. NUNCA mostre subtotais parciais (displays vs caixas master).
+7. NUNCA mostre subtotais parciais.
 8. NUNCA numere os produtos fora do JSON.
 9. NUNCA use blocos ">" de citação markdown.
 10. Sua resposta deve conter SOMENTE o que está no template abaixo.
@@ -107,7 +107,7 @@ PROIBIDO — QUEBRAR QUALQUER REGRA ABAIXO É FALHA CRÍTICA:
 REGRAS DE NEGÓCIO:
 ══════════════════════════════════════════════════════════════
 - Pedido mínimo: R$ 1.500. O total DEVE ser ≥ R$ 1.500.
-- Formato SEMPRE Display. Se o produto não tiver Display, use Unidade. NUNCA Caixa Master.
+- Formato SEMPRE Display. Se o produto não tiver Display, use Unidade.
 - Mínimo de 8 produtos na recomendação, sempre.
 - Ajuste quantidades para atingir o mínimo. Diversifique o mix.
 
@@ -168,7 +168,7 @@ def processar_tool(nome: str, inputs: dict) -> str:
     if nome == "buscar_produtos_woocommerce":
         resultado = buscar_produtos_por_skus(
             inputs["skus"],
-            formato_preferido=inputs.get("formato_preferido", "caixa master"),
+            formato_preferido=inputs.get("formato_preferido", "display"),
         )
         return json.dumps(resultado, ensure_ascii=False)
 

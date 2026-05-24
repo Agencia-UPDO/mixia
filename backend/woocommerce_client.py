@@ -19,7 +19,7 @@ def get_client():
 
 
 def _formatar_produto(p: dict, variacao: dict | None = None) -> dict:
-    """Monta dict de produto sempre apontando para Caixa Master quando disponível."""
+    """Monta dict de produto priorizando Display ou Unidade."""
     base_id = p["id"]
     url_base = f"{WOOCOMMERCE_URL}/?add-to-cart={base_id}"
 
@@ -29,9 +29,9 @@ def _formatar_produto(p: dict, variacao: dict | None = None) -> dict:
         em_estoque = variacao.get("in_stock", estoque is None or estoque > 0)
         # descobre qual formato foi selecionado
         formato = next(
-            (a.get("option", "Caixa Master") for a in variacao.get("attributes", [])
+            (a.get("option", "Display") for a in variacao.get("attributes", [])
              if "formato" in a.get("slug", "").lower()),
-            "Caixa Master"
+            "Display"
         )
         slug_formato = formato.lower().replace(" ", "-")
         add_to_cart = f"{url_base}&variation_id={variacao['id']}&attribute_pa_formato-de-compra={slug_formato}"
@@ -62,7 +62,7 @@ FORMATOS_PREFERIDOS = ["display", "unidade"]
 def _buscar_variacao_display(produto_id: int) -> dict | None:
     """
     Busca a variação Display de um produto variável.
-    Prioridade: Display > Unidade. Nunca retorna Caixa Master.
+    Prioridade: Display > Unidade.
     """
     wcapi = get_client()
     r = wcapi.get(f"products/{produto_id}/variations", params={"per_page": 20})
@@ -75,7 +75,7 @@ def _buscar_variacao_display(produto_id: int) -> dict | None:
             if "formato" in attr.get("slug", "").lower():
                 por_formato[attr.get("option", "").lower()] = v
 
-    # Ordem: Display primeiro, depois Unidade. Nunca Caixa Master.
+    # Ordem: Display primeiro, depois Unidade.
     for formato in FORMATOS_PREFERIDOS:
         if formato in por_formato:
             return por_formato[formato]
