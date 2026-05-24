@@ -35,22 +35,20 @@ TOOLS = [
         "description": (
             "Recomenda os produtos mais vendidos para um segmento e região. "
             "Usa dados históricos de vendas para ranquear os produtos mais relevantes. "
-            "Retorna SKU, nome do produto, grupo e volume de vendas."
+            "Retorna SKU, nome do produto e volume de vendas. "
+            "Segmentos disponíveis: BRINQUEDOS, BRINQUEDOS EDUCATIVOS, CONVENIÊNCIA, FARMÁCIA, PAPELARIA, SUPERMERCADOS. "
+            "Regiões disponíveis: NORTE, NORDESTE, CENTRO-OESTE, SUDESTE, SUL."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "segmento": {
                     "type": "string",
-                    "description": "Segmento de mercado do lojista (ex: LOJA DE BRINQUEDOS).",
+                    "description": "Segmento de mercado do lojista (ex: BRINQUEDOS, FARMÁCIA, PAPELARIA).",
                 },
                 "regiao": {
                     "type": "string",
-                    "description": "Região geográfica (ex: CAMPINAS). Opcional.",
-                },
-                "uf": {
-                    "type": "string",
-                    "description": "Estado (ex: SP). Opcional.",
+                    "description": "Região geográfica (ex: SUDESTE, NORTE, SUL). Opcional.",
                 },
                 "limite": {
                     "type": "integer",
@@ -134,8 +132,16 @@ Aqui está a lista perfeita de produtos para a sua loja! 🎯
 ISSO É TUDO. Nada antes, nada depois, nada além.
 ══════════════════════════════════════════════════════════════
 
+MAPEAMENTO DE LOCALIZAÇÃO → REGIÃO:
+- Norte: AM, PA, AC, RO, RR, AP, TO
+- Nordeste: BA, PE, CE, MA, PB, RN, PI, AL, SE
+- Centro-Oeste: GO, MT, MS, DF
+- Sudeste: SP, RJ, MG, ES
+- Sul: PR, SC, RS
+Use o estado informado para determinar a região correta.
+
 FLUXO:
-1. recomendar_produtos(segmento, localização)
+1. recomendar_produtos(segmento, regiao) — regiao é NORTE, NORDESTE, CENTRO-OESTE, SUDESTE ou SUL
 2. buscar_produtos_woocommerce(skus, formato_preferido)
 3. DESCARTE silenciosamente produtos sem dados/fora de estoque
 4. Monte o JSON apenas com produtos válidos
@@ -156,7 +162,6 @@ def processar_tool(nome: str, inputs: dict) -> str:
         resultado = recomendar_produtos(
             segmento=inputs["segmento"],
             regiao=inputs.get("regiao"),
-            uf=inputs.get("uf"),
             limite=inputs.get("limite", 20),
         )
         return json.dumps(resultado, ensure_ascii=False)

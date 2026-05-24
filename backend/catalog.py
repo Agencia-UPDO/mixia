@@ -1,70 +1,124 @@
 import sqlite3
+import re
 import openpyxl
 from pathlib import Path
 
-EXCEL_PATH = Path(__file__).parent / "Produtos Segmento e Regiao.xlsx"
 DB_PATH = Path("/app/data/catalog.db") if Path("/app/data").exists() else Path(__file__).parent / "catalog.db"
+DATA_DIR = Path(__file__).parent
+
+# Mapeamento: nome do arquivo → segmento
+ARQUIVOS_SEGMENTOS = {
+    "+ VENDIDOS - BRINQUEDOS.xlsx": "BRINQUEDOS",
+    "+ VENDIDOS - BRINQUEDOS EDUCATIVOS.xlsx": "BRINQUEDOS EDUCATIVOS",
+    "+ VENDIDOS - CONVENIÊNCIA.xlsx": "CONVENIÊNCIA",
+    "+ VENDIDOS - FARMÁCIA.xlsx": "FARMÁCIA",
+    "+ VENDIDOS - PAPELARIA.xlsx": "PAPELARIA",
+    "+ VENDIDOS - SUPERMERCADOS.xlsx": "SUPERMERCADOS",
+}
+
+# Mapeamento de aba → região
+def _extrair_regiao(sheet_name: str) -> str:
+    """Extrai a região do nome da aba. Ex: 'BRINQUEDOS - NORTE' → 'NORTE'"""
+    parts = sheet_name.split(" - ", 1)
+    return parts[-1].strip().upper() if len(parts) > 1 else sheet_name.strip().upper()
 
 
-ABAS_EXCLUIDAS = {"Base Consolidada", "CAUDA (<R$100k)"}
+def _extrair_sku_nome(produto_str: str) -> tuple[str, str]:
+    """
+    Extrai SKU e nome do produto da string.
+    Ex: 'SQ250 - SQUISHY - BICHINHOS DE APERTAR - 7898706186875'
+    → sku='SQ250', nome='SQUISHY - BICHINHOS DE APERTAR'
+    """
+    if not produto_str:
+        return "", ""
+    produto_str = str(produto_str).strip()
+    # SKU é tudo antes do primeiro ' - '
+    parts = produto_str.split(" - ", 1)
+    sku = parts[0].strip()
+    resto = parts[1].strip() if len(parts) > 1 else ""
+    # Remove código de barras do final (sequência de 13+ dígitos no final)
+    nome = re.sub(r'\s*-?\s*\d{13,}$', '', resto).strip()
+    # Remove ' - ' solto no final
+    nome = nome.rstrip(' -').strip()
+    return sku, nome
 
 
 def build_catalog():
-    """Lê a aba Base Consolidada do Excel e grava em SQLite."""
-    wb = openpyxl.load_workbook(EXCEL_PATH, read_only=True, data_only=True)
-
-    # Salva nomes das abas (segmentos curados) antes de abrir Base Consolidada
-    abas = [s for s in wb.sheetnames if s not in ABAS_EXCLUIDAS]
-
-    ws = wb["Base Consolidada"]
-
+    """Lê as 6 planilhas de segmentos e grava em SQLite."""
     conn = sqlite3.connect(DB_PATH)
     conn.execute("DROP TABLE IF EXISTS produtos")
     conn.execute("DROP TABLE IF EXISTS segmentos_abas")
+
     conn.execute("CREATE TABLE segmentos_abas (nome TEXT)")
-    conn.executemany("INSERT INTO segmentos_abas VALUES (?)", [(a,) for a in abas])
     conn.execute("""
         CREATE TABLE produtos (
             segmento TEXT,
-            grupo_produto TEXT,
             sku TEXT,
             produto TEXT,
-            uf TEXT,
-            cidade TEXT,
             regiao TEXT,
-            clientes INTEGER,
-            qtd_2025 INTEGER,
-            qtd_2026 INTEGER,
             qtd_total INTEGER
         )
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_seg ON produtos(segmento)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_uf ON produtos(uf)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_regiao ON produtos(regiao)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_sku ON produtos(sku)")
 
-    rows = []
-    for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True)):
-        if i == 0:
-            continue  # pula cabeçalho interno das abas (linha 3 do excel = row index 1)
-        if not row[0]:
-            continue
-        # trim espaços dos SKUs
-        row = list(row[:11])
-        if row[2]:
-            row[2] = str(row[2]).strip()
-        rows.append(row)
-        if len(rows) >= 1000:
-            conn.executemany("INSERT INTO produtos VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
-            rows = []
+    segmentos_inseridos = []
+    total_produtos = 0
 
-    if rows:
-        conn.executemany("INSERT INTO produtos VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
+    for arquivo, segmento in ARQUIVOS_SEGMENTOS.items():
+        filepath = DATA_DIR / arquivo
+        if not filepath.exists():
+            print(f"[WARN] Arquivo nao encontrado: {filepath}")
+            continue
+
+        print(f"Processando: {arquivo} -> {segmento}")
+        segmentos_inseridos.append(segmento)
+
+        wb = openpyxl.load_workbook(filepath, read_only=True, data_only=True)
+        rows = []
+
+        for sheet_name in wb.sheetnames:
+            regiao = _extrair_regiao(sheet_name)
+            ws = wb[sheet_name]
+
+            for i, row in enumerate(ws.iter_rows(min_row=1, values_only=True)):
+                # Pula cabeçalho
+                if i == 0:
+                    continue
+                if not row or not row[0]:
+                    continue
+
+                produto_str = str(row[0]).strip()
+                qtd = row[1] if len(row) > 1 and row[1] else 0
+
+                try:
+                    qtd = int(qtd)
+                except (ValueError, TypeError):
+                    qtd = 0
+
+                sku, nome = _extrair_sku_nome(produto_str)
+                if not sku:
+                    continue
+
+                rows.append((segmento, sku, nome, regiao, qtd))
+                total_produtos += 1
+
+                if len(rows) >= 1000:
+                    conn.executemany("INSERT INTO produtos VALUES (?,?,?,?,?)", rows)
+                    rows = []
+
+        if rows:
+            conn.executemany("INSERT INTO produtos VALUES (?,?,?,?,?)", rows)
+
+        wb.close()
+
+    # Insere segmentos
+    conn.executemany("INSERT INTO segmentos_abas VALUES (?)", [(s,) for s in sorted(segmentos_inseridos)])
 
     conn.commit()
     conn.close()
-    wb.close()
-    print(f"Catálogo construído: {DB_PATH}")
+    print(f"Catalogo construido: {DB_PATH} ({total_produtos} produtos de {len(segmentos_inseridos)} segmentos)")
 
 
 def get_connection():
@@ -72,7 +126,7 @@ def get_connection():
 
 
 def listar_segmentos() -> list[str]:
-    """Retorna os segmentos em ordem alfabética."""
+    """Retorna os segmentos em ordem alfabetica."""
     conn = get_connection()
     rows = conn.execute("SELECT nome FROM segmentos_abas ORDER BY nome").fetchall()
     conn.close()
@@ -100,11 +154,10 @@ def recomendar_produtos(
     uf: str | None = None,
     limite: int = 20,
 ) -> list[dict]:
-    """Retorna os produtos mais vendidos para o segmento/região, ordenados por qtd_total."""
+    """Retorna os produtos mais vendidos para o segmento/regiao, ordenados por qtd_total."""
     conn = get_connection()
     query = """
-        SELECT sku, produto, grupo_produto, regiao, uf,
-               SUM(clientes) as total_clientes,
+        SELECT sku, produto, regiao,
                SUM(qtd_total) as total_vendas
         FROM produtos
         WHERE segmento = ?
@@ -114,12 +167,9 @@ def recomendar_produtos(
     if regiao:
         query += " AND regiao = ?"
         params.append(regiao)
-    if uf:
-        query += " AND uf = ?"
-        params.append(uf)
 
     query += """
-        GROUP BY sku, produto, grupo_produto
+        GROUP BY sku, produto
         ORDER BY total_vendas DESC
         LIMIT ?
     """
@@ -132,11 +182,8 @@ def recomendar_produtos(
         {
             "sku": r[0],
             "produto": r[1],
-            "grupo_produto": r[2],
-            "regiao": r[3],
-            "uf": r[4],
-            "total_clientes": r[5],
-            "total_vendas": r[6],
+            "regiao": r[2],
+            "total_vendas": r[3],
         }
         for r in rows
     ]

@@ -61,9 +61,8 @@
 
   // ── Fluxo guiado ───────────────────────────────────────────────────────────
   const FALLBACK_SEGMENTS = [
-    'LOJA DE BRINQUEDOS', 'PAPELARIA', 'FARMÁCIA', 'SUPERMERCADO',
-    'LOJA DE PRESENTES', 'LOJA DE DEPARTAMENTO', 'LIVRARIA',
-    'LOJA DE ARTIGOS INFANTIS', 'LOJA ONLINE', 'OUTRO'
+    'BRINQUEDOS', 'BRINQUEDOS EDUCATIVOS', 'CONVENIÊNCIA',
+    'FARMÁCIA', 'PAPELARIA', 'SUPERMERCADOS'
   ];
 
   const SEGMENTOS_ONLINE = ['E-COMMERCE', 'ECOMMERCE', 'LOJA ONLINE', 'LOJA VIRTUAL', 'MARKETPLACE'];
@@ -179,9 +178,9 @@
   }
 
   const QTY_POR_TAMANHO = {
-    'Pequena (até 50 m²)':      5,
-    'Média (50 a 150 m²)':       10,
-    'Grande (acima de 150 m²)': 15,
+    'Pequena (até 50 m²)':      8,
+    'Média (50 a 150 m²)':      12,
+    'Grande (acima de 150 m²)': 20,
   };
 
   function showLocalQuestion() {
@@ -190,7 +189,11 @@
     enableInput();
     input.placeholder = 'Digite sua cidade/estado...';
     stepCallback = function(text) {
-      chosenLocal = text;
+      chosenLocal = text.trim();
+      // Normaliza separadores: "Curitiba / PR" → cidade=Curitiba, uf=PR
+      var partes = chosenLocal.split(/\s*[\/\-,]\s*/);
+      var cidade = partes[0] || chosenLocal;
+      var uf = partes[1] || '';
       chosenQty   = QTY_POR_TAMANHO[chosenSize] || 10;
       step = 'chat';
       enableInput();
@@ -200,7 +203,8 @@
         ' Segmento: ' + chosenSegment +
         '. Tamanho: ' + chosenSize +
         '. Público: ' + chosenGender +
-        '. Localização: ' + chosenLocal +
+        '. Cidade: ' + cidade +
+        '. Estado: ' + uf +
         '. Quantidade de produtos: ' + chosenQty + '.' +
         ' Recomende agora os produtos sem fazer perguntas.'
       );
