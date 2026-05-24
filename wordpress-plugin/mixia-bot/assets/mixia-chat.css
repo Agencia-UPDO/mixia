@@ -281,6 +281,33 @@
   flex-shrink: 0;
 }
 
+/* Botão Wishlist */
+.mb-btn-wishlist {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 8px auto 4px 32px;
+  padding: 12px 20px;
+  background: var(--mb-primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.mb-btn-wishlist:hover { background: var(--mb-primary-dark); transform: translateY(-1px); }
+.mb-btn-wishlist:disabled { cursor: wait; opacity: .85; }
+.mb-btn-wishlist-done {
+  background: #28a745 !important;
+  cursor: default !important;
+}
+.mb-btn-wishlist-done:hover {
+  background: #28a745 !important;
+  transform: none !important;
+}
+
 /* Chips */
 .mb-chips {
   display: flex;

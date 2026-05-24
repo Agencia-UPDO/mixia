@@ -482,6 +482,19 @@
           cardsEl.className = 'mb-cards-wrapper';
           cardsEl.innerHTML = '<div class="mb-cards-list">' + valid.map(renderProductCard).join('') + '</div>';
           msgs.appendChild(cardsEl);
+
+          // Botão "Salvar na Lista de Desejos"
+          var productIds = valid.map(p => p.product_id).filter(Boolean);
+          if (productIds.length > 0) {
+            var wishBtn = document.createElement('button');
+            wishBtn.className = 'mb-btn-wishlist';
+            wishBtn.innerHTML = '💾 Salvar todos na Lista de Desejos';
+            wishBtn.addEventListener('click', function() {
+              addAllToWishlist(productIds, wishBtn);
+            });
+            msgs.appendChild(wishBtn);
+          }
+
           var scrollTarget = msgEl || cardsEl;
           msgs.scrollTop = scrollTarget.offsetTop - msgs.offsetTop;
         }
@@ -525,6 +538,43 @@
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
   });
+
+  // ── Wishlist (Woodmart) ─────────────────────────────────────────────────────
+  function addAllToWishlist(productIds, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Salvando...';
+    var done = 0;
+    var errors = 0;
+    var total = productIds.length;
+
+    // Woodmart usa admin-ajax.php com action woodmart_add_to_wishlist
+    var ajaxUrl = (window.woodmart_settings && woodmart_settings.ajaxurl)
+      || (window.ajaxurl)
+      || '/wp-admin/admin-ajax.php';
+
+    function next(i) {
+      if (i >= total) {
+        if (errors === 0) {
+          btn.innerHTML = '✅ Salvo na Lista de Desejos!';
+          btn.className = 'mb-btn-wishlist mb-btn-wishlist-done';
+        } else {
+          btn.innerHTML = '⚠️ ' + done + ' de ' + total + ' salvos';
+        }
+        return;
+      }
+
+      var formData = new FormData();
+      formData.append('action', 'woodmart_add_to_wishlist');
+      formData.append('product_id', productIds[i]);
+
+      fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function() { done++; btn.innerHTML = '⏳ Salvando ' + (i + 1) + '/' + total + '...'; next(i + 1); })
+        .catch(function() { errors++; next(i + 1); });
+    }
+
+    next(0);
+  }
 
   // ── Inicia fluxo ───────────────────────────────────────────────────────────
   showGreetingAndSegments();

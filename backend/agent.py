@@ -252,6 +252,18 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
     if not produtos:
         return _strip_tabelas(texto), [], 0.0
 
+    # Enriquece produtos com ID do WooCommerce (necessário para wishlist)
+    if woo_results:
+        woo_by_url = {p.get("add_to_cart_url", ""): p for p in woo_results if isinstance(p, dict)}
+        woo_by_nome = {p.get("nome", "").lower(): p for p in woo_results if isinstance(p, dict)}
+        for p in produtos:
+            if "product_id" not in p or not p.get("product_id"):
+                woo = woo_by_url.get(p.get("add_to_cart_url", ""))
+                if not woo:
+                    woo = woo_by_nome.get(p.get("nome", "").lower())
+                if woo and woo.get("id"):
+                    p["product_id"] = woo["id"]
+
     total = 0.0
     for p in produtos:
         try:
@@ -315,6 +327,7 @@ def _produtos_de_woo(woo_results: list[dict]) -> list[dict]:
         if preco <= 0:
             continue
         candidatos.append({
+            "product_id": p.get("id"),
             "nome": p.get("nome") or "",
             "formato": p.get("formato") or "Display",
             "preco": f"{preco:.2f}",
