@@ -27,9 +27,9 @@ def verify_admin_token(credentials: HTTPAuthorizationCredentials = Security(bear
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not DB_PATH.exists():
-        print("Construindo catálogo SQLite...")
-        build_catalog()
+    # Sempre reconstrói o catálogo no startup para garantir dados atualizados
+    print("Construindo catálogo SQLite...")
+    build_catalog()
     recomendacoes.init_db()
     yield
 
