@@ -83,8 +83,8 @@
     appendMsg(escHtml(seg), 'user');
     if (isSegmentoOnline(seg)) {
       chosenSize = 'Média (50 a 150 m²)';
-      step = 'gender';
-      showGenderQuestion();
+      step = 'local';
+      showLocalQuestion();
     } else {
       step = 'size';
       showSizeQuestion();
@@ -155,8 +155,8 @@
         size => {
           chosenSize = size;
           appendMsg(escHtml(size), 'user');
-          step = 'gender';
-          showGenderQuestion();
+          step = 'local';
+          showLocalQuestion();
         }
       );
     });
@@ -202,7 +202,6 @@
         'Perfil da loja:' +
         ' Segmento: ' + chosenSegment +
         '. Tamanho: ' + chosenSize +
-        '. Público: ' + chosenGender +
         '. Cidade: ' + cidade +
         '. Estado: ' + uf +
         '. Quantidade de produtos: ' + chosenQty + '.' +
