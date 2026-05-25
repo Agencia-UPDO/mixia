@@ -546,11 +546,6 @@
     var errors = 0;
     var total = productIds.length;
 
-    // Woodmart usa admin-ajax.php com action woodmart_add_to_wishlist
-    var ajaxUrl = (window.woodmart_settings && woodmart_settings.ajaxurl)
-      || (window.ajaxurl)
-      || '/wp-admin/admin-ajax.php';
-
     function next(i) {
       if (i >= total) {
         if (errors === 0) {
@@ -562,13 +557,30 @@
         return;
       }
 
-      // Woodmart usa GET com parâmetros action, product_id, group, key
-      var url = ajaxUrl + '?action=woodmart_add_to_wishlist&product_id=' + productIds[i] + '&group=&key=';
+      var pid = productIds[i];
 
-      fetch(url, { method: 'GET', credentials: 'same-origin' })
-        .then(function(r) { return r.json(); })
-        .then(function() { done++; btn.innerHTML = '⏳ Salvando ' + (i + 1) + '/' + total + '...'; next(i + 1); })
-        .catch(function() { errors++; next(i + 1); });
+      // Tenta usar o jQuery do Woodmart para simular clique no botão nativo
+      if (window.jQuery) {
+        var $ = window.jQuery;
+        // Cria um botão wishlist temporário como o Woodmart espera
+        var fakeBtn = $('<div class="wd-wishlist-btn wd-action-btn wd-style-icon wd-wishlist-add"><a data-product-id="' + pid + '" data-key="" rel="nofollow" href="#" class="woodmart-wishlist-btn">add</a></div>');
+        fakeBtn.appendTo('body');
+        fakeBtn.find('a').trigger('click');
+        setTimeout(function() {
+          fakeBtn.remove();
+          done++;
+          btn.innerHTML = '⏳ Salvando ' + (i + 1) + '/' + total + '...';
+          next(i + 1);
+        }, 500);
+      } else {
+        // Fallback: AJAX direto
+        var ajaxUrl = (window.woodmart_settings && woodmart_settings.ajaxurl) || '/wp-admin/admin-ajax.php';
+        var url = ajaxUrl + '?action=woodmart_add_to_wishlist&product_id=' + pid + '&group=&key=';
+        fetch(url, { method: 'GET', credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function() { done++; btn.innerHTML = '⏳ Salvando ' + (i + 1) + '/' + total + '...'; next(i + 1); })
+          .catch(function() { errors++; next(i + 1); });
+      }
     }
 
     next(0);
