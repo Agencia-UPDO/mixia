@@ -562,11 +562,10 @@
         return;
       }
 
-      var formData = new FormData();
-      formData.append('action', 'woodmart_add_to_wishlist');
-      formData.append('product_id', productIds[i]);
+      // Woodmart usa GET com parâmetros action, product_id, group, key
+      var url = ajaxUrl + '?action=woodmart_add_to_wishlist&product_id=' + productIds[i] + '&group=&key=';
 
-      fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+      fetch(url, { method: 'GET', credentials: 'same-origin' })
         .then(function(r) { return r.json(); })
         .then(function() { done++; btn.innerHTML = '⏳ Salvando ' + (i + 1) + '/' + total + '...'; next(i + 1); })
         .catch(function() { errors++; next(i + 1); });
