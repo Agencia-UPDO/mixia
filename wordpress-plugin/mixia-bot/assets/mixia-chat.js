@@ -197,37 +197,22 @@
   }
 
   function showQtyQuestion() {
-    var sugestao = QTY_POR_TAMANHO[chosenSize] || 10;
     showTypingBrief(function() {
       appendMsg('📦 Quantos produtos você gostaria de receber na recomendação?', 'bot');
-      showChips(
-        ['8 produtos', '12 produtos', '20 produtos', 'Outro'],
-        function(opcao) {
-          if (opcao === 'Outro') {
-            appendMsg(escHtml(opcao), 'user');
-            appendMsg('Digite a quantidade desejada:', 'bot');
-            enableInput();
-            input.placeholder = 'Ex: 15';
-            stepCallback = function(text) {
-              var num = parseInt(text.trim(), 10);
-              if (num >= 1 && num <= 100) {
-                chosenQty = num;
-                finalizarPerfil();
-              } else {
-                appendMsg('Por favor, digite um número entre <strong>1</strong> e <strong>100</strong>.', 'bot');
-                enableInput();
-                input.placeholder = 'Ex: 15';
-                stepCallback = arguments.callee;
-              }
-            };
-          } else {
-            var num = parseInt(opcao, 10);
-            chosenQty = num;
-            appendMsg(escHtml(opcao), 'user');
-            finalizarPerfil();
-          }
+      enableInput();
+      input.placeholder = 'Ex: 12';
+      stepCallback = function(text) {
+        var num = parseInt(text.trim(), 10);
+        if (num >= 1 && num <= 100) {
+          chosenQty = num;
+          finalizarPerfil();
+        } else {
+          appendMsg('Por favor, digite um número entre <strong>1</strong> e <strong>100</strong>.', 'bot');
+          enableInput();
+          input.placeholder = 'Ex: 12';
+          stepCallback = arguments.callee;
         }
-      );
+      };
     });
   }
 
