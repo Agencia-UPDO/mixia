@@ -108,6 +108,7 @@ REGRAS DE NEGÓCIO:
 ══════════════════════════════════════════════════════════════
 - Pedido mínimo OBRIGATÓRIO: R$ 1.500. O total DEVE ser ≥ R$ 1.500. NUNCA mostre produtos se o total for menor.
 - Formato SEMPRE Display. Se o produto não tiver Display, use Unidade.
+- A quantidade de cada produto deve respeitar a quantidade mínima da variação (ex: Display de 24 und = mínimo 24).
 - Mínimo de 8 produtos na recomendação, sempre.
 - Ajuste quantidades para atingir o mínimo de R$ 1.500. Diversifique o mix, aumente quantidades se necessário.
 
@@ -251,17 +252,21 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
     if not produtos:
         return _strip_tabelas(texto), [], 0.0
 
-    # Enriquece produtos com ID do WooCommerce (necessário para wishlist)
+    # Enriquece produtos com ID e min_qty do WooCommerce
     if woo_results:
         woo_by_url = {p.get("add_to_cart_url", ""): p for p in woo_results if isinstance(p, dict)}
         woo_by_nome = {p.get("nome", "").lower(): p for p in woo_results if isinstance(p, dict)}
         for p in produtos:
-            if "product_id" not in p or not p.get("product_id"):
-                woo = woo_by_url.get(p.get("add_to_cart_url", ""))
-                if not woo:
-                    woo = woo_by_nome.get(p.get("nome", "").lower())
-                if woo and woo.get("id"):
+            woo = woo_by_url.get(p.get("add_to_cart_url", ""))
+            if not woo:
+                woo = woo_by_nome.get(p.get("nome", "").lower())
+            if woo:
+                if not p.get("product_id") and woo.get("id"):
                     p["product_id"] = woo["id"]
+                # Aplica quantidade mínima do Display/variação
+                min_qty = woo.get("min_qty")
+                if min_qty and int(p.get("quantidade", 1)) < min_qty:
+                    p["quantidade"] = min_qty
 
     total = 0.0
     for p in produtos:
@@ -275,7 +280,7 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
         produtos.sort(key=lambda c: float(c.get("preco", 0)))
         i = 0
         safeguard = 0
-        while total < 1500 and safeguard < 300:
+        while total < 1500 and safeguard < 500:
             try:
                 preco = float(produtos[i].get("preco", 0))
             except Exception:
@@ -351,12 +356,13 @@ def _produtos_de_woo(woo_results: list[dict]) -> list[dict]:
             preco = 0
         if preco <= 0:
             continue
+        min_qty = p.get("min_qty") or 1
         candidatos.append({
             "product_id": p.get("id"),
             "nome": p.get("nome") or "",
             "formato": p.get("formato") or "Display",
             "preco": f"{preco:.2f}",
-            "quantidade": 1,
+            "quantidade": max(1, min_qty),
             "em_estoque": True,
             "imagem": p.get("imagem") or "",
             "add_to_cart_url": url,

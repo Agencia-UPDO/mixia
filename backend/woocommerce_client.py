@@ -18,6 +18,26 @@ def get_client():
     )
 
 
+def _extrair_min_qty(variacao: dict | None) -> int | None:
+    """
+    Tenta extrair a quantidade mínima de compra da variação.
+    Busca em meta_data por chaves comuns de plugins de min/max qty.
+    """
+    if not variacao:
+        return None
+    for meta in variacao.get("meta_data", []):
+        key = meta.get("key", "")
+        if key in ("minimum_allowed_quantity", "min_quantity", "_wc_min_qty",
+                    "variation_minimum_allowed_quantity", "group_of_quantity"):
+            try:
+                val = int(meta["value"])
+                if val > 0:
+                    return val
+            except (ValueError, TypeError):
+                pass
+    return None
+
+
 def _formatar_produto(p: dict, variacao: dict | None = None) -> dict:
     """Monta dict de produto priorizando Display ou Unidade."""
     base_id = p["id"]
@@ -42,7 +62,9 @@ def _formatar_produto(p: dict, variacao: dict | None = None) -> dict:
         add_to_cart = url_base
         formato = "Unidade"
 
-    return {
+    min_qty = _extrair_min_qty(variacao)
+
+    result = {
         "id": base_id,
         "sku": p["sku"],
         "nome": p["name"],
@@ -54,6 +76,9 @@ def _formatar_produto(p: dict, variacao: dict | None = None) -> dict:
         "url": p.get("permalink", ""),
         "add_to_cart_url": add_to_cart,
     }
+    if min_qty:
+        result["min_qty"] = min_qty
+    return result
 
 
 FORMATOS_PREFERIDOS = ["display", "unidade"]
