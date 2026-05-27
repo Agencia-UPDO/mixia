@@ -106,10 +106,10 @@ PROIBIDO — QUEBRAR QUALQUER REGRA ABAIXO É FALHA CRÍTICA:
 ══════════════════════════════════════════════════════════════
 REGRAS DE NEGÓCIO:
 ══════════════════════════════════════════════════════════════
-- Pedido mínimo: R$ 1.500. O total DEVE ser ≥ R$ 1.500.
+- Pedido mínimo OBRIGATÓRIO: R$ 1.500. O total DEVE ser ≥ R$ 1.500. NUNCA mostre produtos se o total for menor.
 - Formato SEMPRE Display. Se o produto não tiver Display, use Unidade.
 - Mínimo de 8 produtos na recomendação, sempre.
-- Ajuste quantidades para atingir o mínimo. Diversifique o mix.
+- Ajuste quantidades para atingir o mínimo de R$ 1.500. Diversifique o mix, aumente quantidades se necessário.
 
 ══════════════════════════════════════════════════════════════
 TEMPLATE OBRIGATÓRIO (copie EXATAMENTE esta estrutura):
@@ -269,6 +269,32 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
             total += float(p.get("preco", 0)) * int(p.get("quantidade", 1))
         except Exception:
             pass
+
+    # ── Garante mínimo R$ 1.500 — ajusta quantidades se necessário ──
+    if produtos and total < 1500:
+        produtos.sort(key=lambda c: float(c.get("preco", 0)))
+        i = 0
+        safeguard = 0
+        while total < 1500 and safeguard < 300:
+            try:
+                preco = float(produtos[i].get("preco", 0))
+            except Exception:
+                preco = 0
+            if preco > 0:
+                produtos[i]["quantidade"] = int(produtos[i].get("quantidade", 1)) + 1
+                total += preco
+            i = (i + 1) % len(produtos)
+            safeguard += 1
+
+    # Se mesmo após ajuste não atingiu R$ 1.500, não exibe produtos
+    if produtos and total < 1500:
+        return (
+            "⚠️ Não foi possível montar um pedido que atinja o valor mínimo de **R$ 1.500,00**. "
+            "Tente novamente com mais produtos ou um segmento diferente.",
+            [],
+            0.0,
+        )
+
     total_str = f"{total:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
     dicas = _extrair_dicas(texto)

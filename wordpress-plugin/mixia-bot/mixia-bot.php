@@ -10,7 +10,7 @@
 
 defined('ABSPATH') || exit;
 
-define('MIXIA_BOT_VERSION', '1.6.0');
+define('MIXIA_BOT_VERSION', '2.0.0');
 define('MIXIA_BOT_PATH', plugin_dir_path(__FILE__));
 define('MIXIA_BOT_URL', plugin_dir_url(__FILE__));
 

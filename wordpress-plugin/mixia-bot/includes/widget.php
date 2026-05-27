@@ -4,6 +4,8 @@ defined('ABSPATH') || exit;
 add_shortcode('mixia_chat', 'mixia_bot_shortcode');
 add_action('wp_ajax_mixia_add_to_cart',        'mixia_bot_add_to_cart');
 add_action('wp_ajax_nopriv_mixia_add_to_cart', 'mixia_bot_add_to_cart');
+add_action('wp_ajax_mixia_add_to_wishlist',        'mixia_bot_add_to_wishlist');
+add_action('wp_ajax_nopriv_mixia_add_to_wishlist', 'mixia_bot_add_to_wishlist');
 
 function mixia_bot_shortcode($atts)
 {
@@ -42,6 +44,7 @@ function mixia_bot_enqueue_assets()
         'sessionId'   => 'wc_' . md5(uniqid('', true)),
         'ajaxUrl'     => admin_url('admin-ajax.php'),
         'nonce'       => wp_create_nonce('mixia_add_to_cart'),
+        'wishlistNonce' => wp_create_nonce('mixia_wishlist'),
     ]);
 }
 
@@ -81,4 +84,90 @@ function mixia_bot_add_to_cart()
     }
 
     wp_send_json_success(['cart_url' => wc_get_cart_url()]);
+}
+
+function mixia_bot_add_to_wishlist()
+{
+    check_ajax_referer('mixia_wishlist', 'nonce');
+
+    $product_ids_raw = stripslashes($_POST['product_ids'] ?? '');
+    $product_ids = json_decode($product_ids_raw, true);
+
+    if (!is_array($product_ids) || empty($product_ids)) {
+        wp_send_json_error(['message' => 'Nenhum produto informado.']);
+    }
+
+    $added = 0;
+
+    // Tenta usar a classe Wishlist do Woodmart
+    if (class_exists('\XTS\Modules\Wishlist\Wishlist')) {
+        $wishlist = \XTS\Modules\Wishlist\Wishlist::get_instance();
+        foreach ($product_ids as $pid) {
+            $pid = absint($pid);
+            if ($pid > 0 && method_exists($wishlist, 'add')) {
+                $wishlist->add($pid);
+                $added++;
+            }
+        }
+    }
+
+    // Manipula direto no banco do Woodmart
+    if ($added === 0 && is_user_logged_in()) {
+        global $wpdb;
+        $user_id = get_current_user_id();
+        $wishlist_table = $wpdb->prefix . 'woodmart_wishlists';
+        $products_table = $wpdb->prefix . 'woodmart_wishlist_products';
+
+        // Verifica se a tabela existe
+        if ($wpdb->get_var("SHOW TABLES LIKE '$products_table'") === $products_table) {
+            // Pega o ID da wishlist padrao do usuario
+            $wishlist_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT ID FROM $wishlist_table WHERE user_id = %d ORDER BY ID ASC LIMIT 1",
+                $user_id
+            ));
+
+            // Se nao tem wishlist, cria uma
+            if (!$wishlist_id) {
+                $wpdb->insert($wishlist_table, [
+                    'user_id'        => $user_id,
+                    'wishlist_group' => '',
+                    'date_created'   => current_time('mysql'),
+                ]);
+                $wishlist_id = $wpdb->insert_id;
+            }
+
+            foreach ($product_ids as $pid) {
+                $pid = absint($pid);
+                if ($pid <= 0) continue;
+
+                // Verifica se ja existe
+                $exists = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $products_table WHERE product_id = %d AND wishlist_id = %d",
+                    $pid, $wishlist_id
+                ));
+
+                if (!$exists) {
+                    $wpdb->insert($products_table, [
+                        'product_id'  => $pid,
+                        'wishlist_id' => $wishlist_id,
+                        'date_added'  => current_time('mysql'),
+                        'on_sale'     => 0,
+                    ]);
+                    $added++;
+                }
+            }
+        }
+    }
+
+    // Debug info temporário
+    global $wpdb;
+    $debug = [
+        'prefix' => $wpdb->prefix,
+        'user_id' => get_current_user_id(),
+        'logged_in' => is_user_logged_in(),
+        'wishlist_table_exists' => $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}woodmart_wishlist_products'") ? true : false,
+        'wishlist_id_used' => isset($wishlist_id) ? $wishlist_id : null,
+        'product_ids_received' => $product_ids,
+    ];
+    wp_send_json_success(['added' => $added, 'total' => count($product_ids), 'debug' => $debug]);
 }

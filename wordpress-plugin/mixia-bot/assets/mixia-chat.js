@@ -190,25 +190,64 @@
     input.placeholder = 'Digite sua cidade/estado...';
     stepCallback = function(text) {
       chosenLocal = text.trim();
-      // Normaliza separadores: "Curitiba / PR" → cidade=Curitiba, uf=PR
-      var partes = chosenLocal.split(/\s*[\/\-,]\s*/);
-      var cidade = partes[0] || chosenLocal;
-      var uf = partes[1] || '';
-      chosenQty   = QTY_POR_TAMANHO[chosenSize] || 10;
-      step = 'chat';
-      enableInput();
-      input.placeholder = 'Digite sua mensagem...';
-      sendToBackend(
-        'Perfil da loja:' +
-        ' Segmento: ' + chosenSegment +
-        '. Tamanho: ' + chosenSize +
-        '. Cidade: ' + cidade +
-        '. Estado: ' + uf +
-        '. Quantidade de produtos: ' + chosenQty + '.' +
-        ' Recomende agora os produtos sem fazer perguntas.'
-      );
+      step = 'qty';
+      showQtyQuestion();
     };
     });
+  }
+
+  function showQtyQuestion() {
+    var sugestao = QTY_POR_TAMANHO[chosenSize] || 10;
+    showTypingBrief(function() {
+      appendMsg('📦 Quantos produtos você gostaria de receber na recomendação?', 'bot');
+      showChips(
+        ['8 produtos', '12 produtos', '20 produtos', 'Outro'],
+        function(opcao) {
+          if (opcao === 'Outro') {
+            appendMsg(escHtml(opcao), 'user');
+            appendMsg('Digite a quantidade desejada:', 'bot');
+            enableInput();
+            input.placeholder = 'Ex: 15';
+            stepCallback = function(text) {
+              var num = parseInt(text.trim(), 10);
+              if (num >= 1 && num <= 100) {
+                chosenQty = num;
+                finalizarPerfil();
+              } else {
+                appendMsg('Por favor, digite um número entre <strong>1</strong> e <strong>100</strong>.', 'bot');
+                enableInput();
+                input.placeholder = 'Ex: 15';
+                stepCallback = arguments.callee;
+              }
+            };
+          } else {
+            var num = parseInt(opcao, 10);
+            chosenQty = num;
+            appendMsg(escHtml(opcao), 'user');
+            finalizarPerfil();
+          }
+        }
+      );
+    });
+  }
+
+  function finalizarPerfil() {
+    // Normaliza separadores: "Curitiba / PR" → cidade=Curitiba, uf=PR
+    var partes = chosenLocal.split(/\s*[\/\-,]\s*/);
+    var cidade = partes[0] || chosenLocal;
+    var uf = partes[1] || '';
+    step = 'chat';
+    enableInput();
+    input.placeholder = 'Digite sua mensagem...';
+    sendToBackend(
+      'Perfil da loja:' +
+      ' Segmento: ' + chosenSegment +
+      '. Tamanho: ' + chosenSize +
+      '. Cidade: ' + cidade +
+      '. Estado: ' + uf +
+      '. Quantidade de produtos: ' + chosenQty + '.' +
+      ' Recomende agora os produtos sem fazer perguntas.'
+    );
   }
 
   // Callback para passos que usam o input de texto
@@ -301,9 +340,6 @@
             <div class="mb-detail-row"><span>Preço unitário:</span> <span>R$ ${fmtBRL(precoUnit)}</span></div>
             <div class="mb-detail-row mb-detail-total"><span>Total:</span> <strong>R$ ${fmtBRL(subtotal)}</strong></div>
           </div>
-          ${p.add_to_cart_url
-            ? `<a class="mb-btn-view" href="${p.add_to_cart_url}" target="_blank" rel="noopener">Ver Produto →</a>`
-            : ''}
         </div>
       </div>`;
   }
@@ -557,30 +593,30 @@
         return;
       }
 
-      var pid = productIds[i];
+      // Envia todos os IDs de uma vez pro nosso endpoint PHP
+      var ajaxUrl = cfg.ajaxUrl || '/wp-admin/admin-ajax.php';
+      var formData = new FormData();
+      formData.append('action', 'mixia_add_to_wishlist');
+      formData.append('nonce', cfg.wishlistNonce || '');
+      formData.append('product_ids', JSON.stringify(productIds));
 
-      // Tenta usar o jQuery do Woodmart para simular clique no botão nativo
-      if (window.jQuery) {
-        var $ = window.jQuery;
-        // Cria um botão wishlist temporário como o Woodmart espera
-        var fakeBtn = $('<div class="wd-wishlist-btn wd-action-btn wd-style-icon wd-wishlist-add"><a data-product-id="' + pid + '" data-key="" rel="nofollow" href="#" class="woodmart-wishlist-btn">add</a></div>');
-        fakeBtn.appendTo('body');
-        fakeBtn.find('a').trigger('click');
-        setTimeout(function() {
-          fakeBtn.remove();
-          done++;
-          btn.innerHTML = '⏳ Salvando ' + (i + 1) + '/' + total + '...';
-          next(i + 1);
-        }, 500);
-      } else {
-        // Fallback: AJAX direto
-        var ajaxUrl = (window.woodmart_settings && woodmart_settings.ajaxurl) || '/wp-admin/admin-ajax.php';
-        var url = ajaxUrl + '?action=woodmart_add_to_wishlist&product_id=' + pid + '&group=&key=';
-        fetch(url, { method: 'GET', credentials: 'same-origin' })
-          .then(function(r) { return r.json(); })
-          .then(function() { done++; btn.innerHTML = '⏳ Salvando ' + (i + 1) + '/' + total + '...'; next(i + 1); })
-          .catch(function() { errors++; next(i + 1); });
-      }
+      fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.success) {
+            done = total;
+            btn.innerHTML = '✅ Salvo na Lista de Desejos!';
+            btn.className = 'mb-btn-wishlist mb-btn-wishlist-done';
+          } else {
+            errors = total;
+            btn.innerHTML = '⚠️ Erro ao salvar. Faça login e tente novamente.';
+          }
+        })
+        .catch(function() {
+          errors = total;
+          btn.innerHTML = '⚠️ Erro ao salvar';
+        });
+      return;
     }
 
     next(0);
