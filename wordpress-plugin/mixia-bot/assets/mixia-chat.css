@@ -280,6 +280,20 @@
   padding-top: 4px;
   border-top: 1px solid #f0f0f0;
 }
+.mb-card-cart-btn {
+  display: block;
+  margin-top: 8px;
+  padding: 6px 0;
+  background: var(--mb-primary);
+  color: #fff !important;
+  text-align: center;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: background .15s;
+}
+.mb-card-cart-btn:hover { background: var(--mb-primary-dark); }
 
 /* Lista numerada de segmentos */
 .mb-numbered-list {

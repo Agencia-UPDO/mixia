@@ -314,6 +314,10 @@
     const subtotal   = precoUnit * qty;
     const fmtBRL     = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
+    const cartBtn = p.add_to_cart_url
+      ? `<a class="mb-card-cart-btn" href="${p.add_to_cart_url}" target="_blank" rel="noopener">🛒 Adicionar</a>`
+      : '';
+
     return `
       <div class="mb-product-card">
         <div class="mb-product-img-wrap">${imgHtml}</div>
@@ -325,6 +329,7 @@
             <div class="mb-detail-row"><span>Unit:</span><span>R$ ${fmtBRL(precoUnit)}</span></div>
             <div class="mb-detail-row mb-detail-total"><span>Total</span><strong>R$ ${fmtBRL(subtotal)}</strong></div>
           </div>
+          ${cartBtn}
         </div>
       </div>`;
   }
@@ -539,62 +544,6 @@
           cardsEl.innerHTML = '<div class="mb-cards-list">' + valid.map(renderProductCard).join('') + '</div>';
           msgs.appendChild(cardsEl);
 
-          // Separa produtos: com variation_id vão pro carrinho, sem vão pra página do produto
-          var cartItems = [];
-          var needsChoice = [];
-
-          valid.forEach(function(p) {
-            var item = { id: p.product_id, qty: 1 };
-            var hasVariation = false;
-            if (p.add_to_cart_url) {
-              var mv = p.add_to_cart_url.match(/variation_id=(\d+)/);
-              if (mv) {
-                item.variation_id = parseInt(mv[1], 10);
-                hasVariation = true;
-                var attrs = {};
-                var attrRe = /[?&](attribute_[^=]+)=([^&]*)/g;
-                var ma;
-                while ((ma = attrRe.exec(p.add_to_cart_url)) !== null) {
-                  attrs[decodeURIComponent(ma[1])] = decodeURIComponent(ma[2]);
-                }
-                if (Object.keys(attrs).length > 0) item.attributes = attrs;
-              }
-            }
-            if (hasVariation && p.product_id) {
-              cartItems.push(item);
-            } else if (p.url) {
-              needsChoice.push({ nome: p.nome, url: p.url });
-            }
-          });
-
-          if (cartItems.length > 0) {
-            var cartBtn = document.createElement('button');
-            cartBtn.className = 'mb-btn-wishlist';
-            cartBtn.innerHTML = '🛒 Adicionar ' + cartItems.length + ' produto(s) ao carrinho';
-            cartBtn.addEventListener('click', function() {
-              addAllToCart(cartItems, cartBtn, needsChoice);
-            });
-            msgs.appendChild(cartBtn);
-          }
-
-          // Se tem produtos que precisam de escolha, mostra lista de links
-          if (needsChoice.length > 0) {
-            var choiceEl = document.createElement('div');
-            choiceEl.className = 'mb-msg bot';
-            var icon = document.createElement('span');
-            icon.className = 'mb-bot-icon';
-            icon.textContent = '🤖';
-            var content = document.createElement('div');
-            content.className = 'mb-msg-content';
-            var linksHtml = '<strong>' + needsChoice.length + ' produto(s) precisam de escolha de opcao:</strong><br>';
-            needsChoice.forEach(function(p) {
-              linksHtml += '<a href="' + p.url + '" target="_blank" rel="noopener" style="color:var(--mb-primary)">' + escHtml(p.nome) + '</a><br>';
-            });
-            content.innerHTML = linksHtml;
-            choiceEl.appendChild(icon);
-            choiceEl.appendChild(content);
-            msgs.appendChild(choiceEl);
-          }
 
           var scrollTarget = msgEl || cardsEl;
           msgs.scrollTop = scrollTarget.offsetTop - msgs.offsetTop;
