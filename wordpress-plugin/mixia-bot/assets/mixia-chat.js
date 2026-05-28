@@ -321,9 +321,9 @@
           <div class="mb-product-name">${escHtml(p.nome)}</div>
           <span class="mb-product-badge ${badgeClass}">${escHtml(p.formato)}</span>
           <div class="mb-product-details">
-            <div class="mb-detail-row"><span>Quantidade:</span> <span>${qty}</span></div>
-            <div class="mb-detail-row"><span>Preço unitário:</span> <span>R$ ${fmtBRL(precoUnit)}</span></div>
-            <div class="mb-detail-row mb-detail-total"><span>Total:</span> <strong>R$ ${fmtBRL(subtotal)}</strong></div>
+            <div class="mb-detail-row"><span>Qtd:</span><span>${qty}</span></div>
+            <div class="mb-detail-row"><span>Unit:</span><span>R$ ${fmtBRL(precoUnit)}</span></div>
+            <div class="mb-detail-row mb-detail-total"><span>Total</span><strong>R$ ${fmtBRL(subtotal)}</strong></div>
           </div>
         </div>
       </div>`;
@@ -375,10 +375,41 @@
     if (beforeHtml.trim()) appendMsg(beforeHtml.trim(), 'bot');
 
     if (cardsHtml.trim()) {
-      const cardsEl = document.createElement('div');
-      cardsEl.className = 'mb-cards-wrapper';
-      cardsEl.innerHTML = cardsHtml;
-      msgs.appendChild(cardsEl);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mb-cards-wrapper';
+
+      // Carrossel com setas
+      const carousel = document.createElement('div');
+      carousel.className = 'mb-carousel';
+
+      const btnPrev = document.createElement('button');
+      btnPrev.className = 'mb-carousel-btn prev';
+      btnPrev.innerHTML = '&#8249;';
+      btnPrev.setAttribute('aria-label', 'Anterior');
+
+      const btnNext = document.createElement('button');
+      btnNext.className = 'mb-carousel-btn next';
+      btnNext.innerHTML = '&#8250;';
+      btnNext.setAttribute('aria-label', 'Próximo');
+
+      const list = document.createElement('div');
+      list.className = 'mb-cards-list';
+      list.innerHTML = cardsHtml;
+
+      // Scroll por card (150px + 10px gap)
+      var cardWidth = 160;
+      btnPrev.addEventListener('click', function() {
+        list.scrollBy({ left: -cardWidth * 2, behavior: 'smooth' });
+      });
+      btnNext.addEventListener('click', function() {
+        list.scrollBy({ left: cardWidth * 2, behavior: 'smooth' });
+      });
+
+      carousel.appendChild(btnPrev);
+      carousel.appendChild(list);
+      carousel.appendChild(btnNext);
+      wrapper.appendChild(carousel);
+      msgs.appendChild(wrapper);
     }
 
     if (afterHtml.trim()) appendMsg(afterHtml.trim(), 'bot');
