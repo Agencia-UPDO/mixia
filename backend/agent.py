@@ -275,7 +275,7 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
         except Exception:
             pass
 
-    # ── Garante mínimo R$ 1.500 — ajusta quantidades se necessário ──
+    # ── Garante mínimo R$ 1.500 — ajusta quantidades respeitando estoque ──
     if produtos and total < 1500:
         produtos.sort(key=lambda c: float(c.get("preco", 0)))
         i = 0
@@ -286,8 +286,12 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
             except Exception:
                 preco = 0
             if preco > 0:
-                produtos[i]["quantidade"] = int(produtos[i].get("quantidade", 1)) + 1
-                total += preco
+                estoque = produtos[i].get("estoque")
+                qty_atual = int(produtos[i].get("quantidade", 1))
+                # Só aumenta se estoque for desconhecido (None) ou tiver espaço
+                if estoque is None or qty_atual < int(estoque):
+                    produtos[i]["quantidade"] = qty_atual + 1
+                    total += preco
             i = (i + 1) % len(produtos)
             safeguard += 1
 
@@ -357,12 +361,14 @@ def _produtos_de_woo(woo_results: list[dict]) -> list[dict]:
         if preco <= 0:
             continue
         min_qty = p.get("min_qty") or 1
+        estoque = p.get("estoque")
         candidatos.append({
             "product_id": p.get("id"),
             "nome": p.get("nome") or "",
             "formato": p.get("formato") or "Display",
             "preco": f"{preco:.2f}",
             "quantidade": max(1, min_qty),
+            "estoque": estoque,
             "em_estoque": True,
             "imagem": p.get("imagem") or "",
             "add_to_cart_url": url,
@@ -371,7 +377,7 @@ def _produtos_de_woo(woo_results: list[dict]) -> list[dict]:
     if not candidatos:
         return []
 
-    # Garante mínimo de R$ 1.500 — aumenta quantidade dos itens mais baratos
+    # Garante mínimo de R$ 1.500 — aumenta quantidade respeitando estoque
     def total_atual():
         return sum(float(c["preco"]) * c["quantidade"] for c in candidatos)
 
@@ -379,7 +385,10 @@ def _produtos_de_woo(woo_results: list[dict]) -> list[dict]:
     i = 0
     safeguard = 0
     while total_atual() < 1500 and safeguard < 200:
-        candidatos[i]["quantidade"] += 1
+        estoque = candidatos[i].get("estoque")
+        qty_atual = candidatos[i]["quantidade"]
+        if estoque is None or qty_atual < int(estoque):
+            candidatos[i]["quantidade"] += 1
         i = (i + 1) % len(candidatos)
         safeguard += 1
 
