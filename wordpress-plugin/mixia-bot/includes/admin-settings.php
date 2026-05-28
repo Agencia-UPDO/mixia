@@ -33,7 +33,7 @@ function mixia_bot_save_settings()
     }
     check_admin_referer('mixia_bot_save');
 
-    $backend_url   = sanitize_url($_POST['mixia_bot_backend_url'] ?? '');
+    $backend_url   = esc_url_raw($_POST['mixia_bot_backend_url'] ?? '');
     $admin_token   = sanitize_text_field($_POST['mixia_bot_admin_token'] ?? '');
     $widget_title  = sanitize_text_field($_POST['mixia_bot_widget_title'] ?? 'Assistente de Vendas');
     $widget_enabled = isset($_POST['mixia_bot_widget_enabled']) ? '1' : '0';
