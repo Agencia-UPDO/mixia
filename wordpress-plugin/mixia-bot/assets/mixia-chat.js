@@ -378,51 +378,60 @@
     const afterHtml  = parts[2] || '';
 
     if (beforeHtml.trim()) appendMsg(beforeHtml.trim(), 'bot');
-
     if (cardsHtml.trim()) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'mb-cards-wrapper';
+      // Extrai objetos do HTML para reusar buildCarousel
+      var tmpDiv = document.createElement('div');
+      tmpDiv.innerHTML = cardsHtml;
+      msgs.appendChild(buildCarousel(null, cardsHtml));
+    }
+    if (afterHtml.trim()) appendMsg(afterHtml.trim(), 'bot');
+  }
 
-      // Carrossel com setas
-      const carousel = document.createElement('div');
-      carousel.className = 'mb-carousel';
+  // ── Constrói carrossel com setas ────────────────────────────────────────────
+  function buildCarousel(produtos, cardsHtml) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'mb-cards-wrapper';
 
-      // Nav com setas acima
-      const nav = document.createElement('div');
-      nav.className = 'mb-carousel-nav';
+    var carousel = document.createElement('div');
+    carousel.className = 'mb-carousel';
 
-      const btnPrev = document.createElement('button');
-      btnPrev.className = 'mb-carousel-btn';
-      btnPrev.innerHTML = '&#8249;';
-      btnPrev.setAttribute('aria-label', 'Anterior');
+    var nav = document.createElement('div');
+    nav.className = 'mb-carousel-nav';
 
-      const btnNext = document.createElement('button');
-      btnNext.className = 'mb-carousel-btn';
-      btnNext.innerHTML = '&#8250;';
-      btnNext.setAttribute('aria-label', 'Proximo');
+    var btnPrev = document.createElement('button');
+    btnPrev.className = 'mb-carousel-btn';
+    btnPrev.innerHTML = '&#8249;';
+    btnPrev.setAttribute('aria-label', 'Anterior');
 
-      nav.appendChild(btnPrev);
-      nav.appendChild(btnNext);
+    var btnNext = document.createElement('button');
+    btnNext.className = 'mb-carousel-btn';
+    btnNext.innerHTML = '&#8250;';
+    btnNext.setAttribute('aria-label', 'Proximo');
 
-      const list = document.createElement('div');
-      list.className = 'mb-cards-list';
-      list.innerHTML = cardsHtml;
+    nav.appendChild(btnPrev);
+    nav.appendChild(btnNext);
 
-      var cardWidth = 160;
-      btnPrev.addEventListener('click', function() {
-        list.scrollBy({ left: -cardWidth * 2, behavior: 'smooth' });
-      });
-      btnNext.addEventListener('click', function() {
-        list.scrollBy({ left: cardWidth * 2, behavior: 'smooth' });
-      });
+    var list = document.createElement('div');
+    list.className = 'mb-cards-list';
 
-      carousel.appendChild(nav);
-      carousel.appendChild(list);
-      wrapper.appendChild(carousel);
-      msgs.appendChild(wrapper);
+    if (produtos) {
+      list.innerHTML = produtos.map(renderProductCard).join('');
+    } else {
+      list.innerHTML = cardsHtml || '';
     }
 
-    if (afterHtml.trim()) appendMsg(afterHtml.trim(), 'bot');
+    var cardWidth = 160;
+    btnPrev.addEventListener('click', function() {
+      list.scrollBy({ left: -cardWidth * 2, behavior: 'smooth' });
+    });
+    btnNext.addEventListener('click', function() {
+      list.scrollBy({ left: cardWidth * 2, behavior: 'smooth' });
+    });
+
+    carousel.appendChild(nav);
+    carousel.appendChild(list);
+    wrapper.appendChild(carousel);
+    return wrapper;
   }
 
   const TYPING_MESSAGES = [
@@ -539,27 +548,8 @@
       if (data.produtos && data.produtos.length > 0) {
         const valid = data.produtos.filter(p => p.add_to_cart_url);
         if (valid.length > 0) {
-          const cardsEl = document.createElement('div');
-          cardsEl.className = 'mb-cards-wrapper';
-          cardsEl.innerHTML = '<div class="mb-cards-list">' + valid.map(renderProductCard).join('') + '</div>';
-          msgs.appendChild(cardsEl);
-
-          // Botão "Ver todos os produtos →"
-          var productIds = valid.map(function(p) { return p.product_id; }).filter(Boolean);
-          if (productIds.length > 0 && cfg.selecaoUrl) {
-            var selecaoBtn = document.createElement('a');
-            selecaoBtn.className = 'mb-btn-wishlist';
-            selecaoBtn.href = cfg.selecaoUrl + '?ids=' + productIds.join(',');
-            selecaoBtn.target = '_blank';
-            selecaoBtn.rel = 'noopener';
-            selecaoBtn.innerHTML = '🛍️ Ver todos os produtos selecionados';
-            selecaoBtn.style.textDecoration = 'none';
-            selecaoBtn.style.display = 'block';
-            selecaoBtn.style.textAlign = 'center';
-            msgs.appendChild(selecaoBtn);
-          }
-
-          var scrollTarget = msgEl || cardsEl;
+          msgs.appendChild(buildCarousel(valid));
+          var scrollTarget = msgEl || msgs.lastChild;
           msgs.scrollTop = scrollTarget.offsetTop - msgs.offsetTop;
         }
       }
