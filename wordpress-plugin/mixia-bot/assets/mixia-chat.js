@@ -314,8 +314,8 @@
     const subtotal   = precoUnit * qty;
     const fmtBRL     = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-    const cartBtn = p.add_to_cart_url
-      ? `<a class="mb-card-cart-btn" href="${p.add_to_cart_url}" target="_blank" rel="noopener">🛒 Adicionar</a>`
+    const cartBtn = p.url
+      ? `<a class="mb-card-cart-btn" href="${p.url}" target="_blank" rel="noopener">Ver produto →</a>`
       : '';
 
     return `
