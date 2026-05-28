@@ -128,16 +128,20 @@ def buscar_produtos_por_skus(skus: list[str], formato_preferido: str = "display"
 
     resultado = [_formatar_produto(p, None) for p in simples]
 
-    # Busca variações em paralelo
+    # Busca variações em paralelo — ignora variáveis sem variação Display/Unidade
     def buscar(p):
         variacao = _buscar_variacao_display(p["id"])
+        if variacao is None:
+            return None  # Produto variável sem variação válida — descarta
         return _formatar_produto(p, variacao)
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {executor.submit(buscar, p): p for p in variaveis}
         for future in as_completed(futures):
             try:
-                resultado.append(future.result())
+                result = future.result()
+                if result is not None:
+                    resultado.append(result)
             except Exception:
                 pass
 
