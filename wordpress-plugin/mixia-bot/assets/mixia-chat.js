@@ -230,8 +230,9 @@
       '. Tamanho: ' + chosenSize +
       '. Cidade: ' + cidade +
       '. Estado: ' + uf +
-      '. Quantidade de produtos: ' + chosenQty + '.' +
-      ' Recomende agora os produtos sem fazer perguntas.'
+      '. Quantidade de produtos desejada: ' + chosenQty + ' SKUs diferentes.' +
+      ' IMPORTANTE: recomende EXATAMENTE ' + chosenQty + ' produtos diferentes.' +
+      ' Recomende agora sem fazer perguntas.'
     );
   }
 

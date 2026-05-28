@@ -109,7 +109,8 @@ REGRAS DE NEGÓCIO:
 - Pedido mínimo OBRIGATÓRIO: R$ 1.500. O total DEVE ser ≥ R$ 1.500. NUNCA mostre produtos se o total for menor.
 - Formato SEMPRE Display. Se o produto não tiver Display, use Unidade.
 - A quantidade de cada produto deve respeitar a quantidade mínima da variação (ex: Display de 24 und = mínimo 24).
-- Mínimo de 8 produtos na recomendação, sempre.
+- QUANTIDADE DE SKUs: o perfil da loja informa "Quantidade de produtos: N". Você DEVE recomendar EXATAMENTE N SKUs diferentes. Se não foi informado, use no mínimo 8. Nunca recomende menos do que o solicitado.
+- Chame recomendar_produtos com limite >= N para ter produtos suficientes.
 - Ajuste quantidades para atingir o mínimo de R$ 1.500. Diversifique o mix, aumente quantidades se necessário.
 
 ══════════════════════════════════════════════════════════════
