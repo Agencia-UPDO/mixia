@@ -534,16 +534,16 @@
           cardsEl.innerHTML = '<div class="mb-cards-list">' + valid.map(renderProductCard).join('') + '</div>';
           msgs.appendChild(cardsEl);
 
-          // Botão "Salvar na Lista de Desejos"
-          var productIds = valid.map(p => p.product_id).filter(Boolean);
-          if (productIds.length > 0) {
-            var wishBtn = document.createElement('button');
-            wishBtn.className = 'mb-btn-wishlist';
-            wishBtn.innerHTML = '💾 Salvar todos na Lista de Desejos';
-            wishBtn.addEventListener('click', function() {
-              addAllToWishlist(productIds, wishBtn);
+          // Botão "Adicionar tudo ao carrinho"
+          var cartItems = valid.map(p => ({ id: p.product_id, qty: p.quantidade || 1 })).filter(i => i.id);
+          if (cartItems.length > 0) {
+            var cartBtn = document.createElement('button');
+            cartBtn.className = 'mb-btn-wishlist';
+            cartBtn.innerHTML = '🛒 Adicionar tudo ao carrinho';
+            cartBtn.addEventListener('click', function() {
+              addAllToCart(cartItems, cartBtn);
             });
-            msgs.appendChild(wishBtn);
+            msgs.appendChild(cartBtn);
           }
 
           var scrollTarget = msgEl || cardsEl;
@@ -590,52 +590,32 @@
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
   });
 
-  // ── Wishlist (Woodmart) ─────────────────────────────────────────────────────
-  function addAllToWishlist(productIds, btn) {
+  // ── Adicionar tudo ao carrinho ──────────────────────────────────────────────
+  function addAllToCart(items, btn) {
     btn.disabled = true;
-    btn.innerHTML = '⏳ Salvando...';
-    var done = 0;
-    var errors = 0;
-    var total = productIds.length;
+    btn.innerHTML = '⏳ Adicionando ao carrinho...';
 
-    function next(i) {
-      if (i >= total) {
-        if (errors === 0) {
-          btn.innerHTML = '✅ Salvo na Lista de Desejos!';
+    var ajaxUrl = cfg.ajaxUrl || '/wp-admin/admin-ajax.php';
+    var formData = new FormData();
+    formData.append('action', 'mixia_add_to_cart');
+    formData.append('nonce', cfg.nonce || '');
+    formData.append('items', JSON.stringify(items));
+
+    fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.success) {
+          btn.innerHTML = '✅ Adicionado! <a href="' + data.data.cart_url + '" style="color:#fff;text-decoration:underline">Ver carrinho →</a>';
           btn.className = 'mb-btn-wishlist mb-btn-wishlist-done';
         } else {
-          btn.innerHTML = '⚠️ ' + done + ' de ' + total + ' salvos';
+          btn.disabled = false;
+          btn.innerHTML = '⚠️ Erro ao adicionar. Tente novamente.';
         }
-        return;
-      }
-
-      // Envia todos os IDs de uma vez pro nosso endpoint PHP
-      var ajaxUrl = cfg.ajaxUrl || '/wp-admin/admin-ajax.php';
-      var formData = new FormData();
-      formData.append('action', 'mixia_add_to_wishlist');
-      formData.append('nonce', cfg.wishlistNonce || '');
-      formData.append('product_ids', JSON.stringify(productIds));
-
-      fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (data && data.success) {
-            done = total;
-            btn.innerHTML = '✅ Salvo na Lista de Desejos!';
-            btn.className = 'mb-btn-wishlist mb-btn-wishlist-done';
-          } else {
-            errors = total;
-            btn.innerHTML = '⚠️ Erro ao salvar. Faça login e tente novamente.';
-          }
-        })
-        .catch(function() {
-          errors = total;
-          btn.innerHTML = '⚠️ Erro ao salvar';
-        });
-      return;
-    }
-
-    next(0);
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.innerHTML = '⚠️ Erro ao conectar. Tente novamente.';
+      });
   }
 
   // ── Inicia fluxo ───────────────────────────────────────────────────────────

@@ -324,7 +324,7 @@
   flex-shrink: 0;
 }
 
-/* Botão Wishlist */
+/* Botão Carrinho */
 .mb-btn-wishlist {
   display: block;
   width: calc(100% - 40px);
