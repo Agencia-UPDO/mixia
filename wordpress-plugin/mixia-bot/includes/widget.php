@@ -39,11 +39,12 @@ function mixia_bot_enqueue_assets()
     );
 
     wp_localize_script('mixia-bot-chat', 'MixiaBotConfig', array(
-        'backendUrl'  => trailingslashit(get_option('mixia_bot_backend_url', '')),
-        'widgetTitle' => get_option('mixia_bot_widget_title', 'Assistente de Vendas'),
-        'sessionId'   => 'wc_' . md5(uniqid('', true)),
-        'ajaxUrl'     => admin_url('admin-ajax.php'),
-        'nonce'       => wp_create_nonce('mixia_add_to_cart'),
+        'backendUrl'   => trailingslashit(get_option('mixia_bot_backend_url', '')),
+        'widgetTitle'  => get_option('mixia_bot_widget_title', 'Assistente de Vendas'),
+        'sessionId'    => 'wc_' . md5(uniqid('', true)),
+        'ajaxUrl'      => admin_url('admin-ajax.php'),
+        'nonce'        => wp_create_nonce('mixia_add_to_cart'),
+        'selecaoUrl'   => get_option('mixia_bot_selecao_url', '/selecao/'),
     ));
 }
 
@@ -87,4 +88,27 @@ function mixia_bot_add_to_cart()
     wp_send_json_success(array('cart_url' => wc_get_cart_url()));
 }
 
+endif;
+
+// ── Shortcode [mixia_selecao] ─────────────────────────────────────────────────
+if (!function_exists('mixia_bot_selecao_shortcode')) :
+add_shortcode('mixia_selecao', 'mixia_bot_selecao_shortcode');
+
+function mixia_bot_selecao_shortcode($atts) {
+    if (!function_exists('WC')) {
+        return '<p>WooCommerce nao esta ativo.</p>';
+    }
+
+    $ids_raw = isset($_GET['ids']) ? sanitize_text_field($_GET['ids']) : '';
+    if (!$ids_raw) {
+        return '<p>Nenhum produto selecionado.</p>';
+    }
+
+    $ids = array_filter(array_map('absint', explode(',', $ids_raw)));
+    if (empty($ids)) {
+        return '<p>Nenhum produto selecionado.</p>';
+    }
+
+    return do_shortcode('[products ids="' . implode(',', $ids) . '" columns="4" paginate="false"]');
+}
 endif;

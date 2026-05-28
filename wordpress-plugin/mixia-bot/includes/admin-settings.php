@@ -26,6 +26,7 @@ function mixia_bot_register_settings()
     register_setting('mixia_bot_options', 'mixia_bot_admin_token');
     register_setting('mixia_bot_options', 'mixia_bot_widget_title');
     register_setting('mixia_bot_options', 'mixia_bot_widget_enabled');
+    register_setting('mixia_bot_options', 'mixia_bot_selecao_url');
 }
 
 function mixia_bot_save_settings()
@@ -40,10 +41,12 @@ function mixia_bot_save_settings()
     $widget_title   = sanitize_text_field(isset($_POST['mixia_bot_widget_title']) ? $_POST['mixia_bot_widget_title'] : 'Assistente de Vendas');
     $widget_enabled = isset($_POST['mixia_bot_widget_enabled']) ? '1' : '0';
 
+    $selecao_url = esc_url_raw(isset($_POST['mixia_bot_selecao_url']) ? $_POST['mixia_bot_selecao_url'] : '/selecao/');
     update_option('mixia_bot_backend_url', $backend_url);
     update_option('mixia_bot_admin_token', $admin_token);
     update_option('mixia_bot_widget_title', $widget_title);
     update_option('mixia_bot_widget_enabled', $widget_enabled);
+    update_option('mixia_bot_selecao_url', $selecao_url);
 
     $anthropic_key = sanitize_text_field(isset($_POST['mixia_bot_anthropic_key']) ? $_POST['mixia_bot_anthropic_key'] : '');
     $wc_key        = sanitize_text_field(isset($_POST['mixia_bot_wc_key']) ? $_POST['mixia_bot_wc_key'] : '');
@@ -98,6 +101,7 @@ function mixia_bot_settings_page()
     $backend_url    = get_option('mixia_bot_backend_url', '');
     $admin_token    = get_option('mixia_bot_admin_token', '');
     $widget_title   = get_option('mixia_bot_widget_title', 'Assistente de Vendas');
+    $selecao_url    = get_option('mixia_bot_selecao_url', '/selecao/');
     $anthropic_set  = get_option('mixia_bot_anthropic_key_set', '');
     $wc_key_set     = get_option('mixia_bot_wc_key_set', '');
     $wc_secret_set  = get_option('mixia_bot_wc_secret_set', '');
@@ -176,6 +180,15 @@ function mixia_bot_settings_page()
                         <input type="text" id="mixia_bot_widget_title" name="mixia_bot_widget_title"
                             value="<?php echo esc_attr($widget_title); ?>" class="regular-text">
                         <p class="description">Use o shortcode <code>[mixia_chat]</code> em qualquer pagina.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="mixia_bot_selecao_url">URL da Pagina de Selecao</label></th>
+                    <td>
+                        <input type="text" id="mixia_bot_selecao_url" name="mixia_bot_selecao_url"
+                            value="<?php echo esc_attr($selecao_url); ?>" class="regular-text"
+                            placeholder="/selecao/">
+                        <p class="description">Crie uma pagina com o shortcode <code>[mixia_selecao]</code> e coloque a URL aqui.</p>
                     </td>
                 </tr>
             </table>

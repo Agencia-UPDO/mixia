@@ -544,6 +544,20 @@
           cardsEl.innerHTML = '<div class="mb-cards-list">' + valid.map(renderProductCard).join('') + '</div>';
           msgs.appendChild(cardsEl);
 
+          // Botão "Ver todos os produtos →"
+          var productIds = valid.map(function(p) { return p.product_id; }).filter(Boolean);
+          if (productIds.length > 0 && cfg.selecaoUrl) {
+            var selecaoBtn = document.createElement('a');
+            selecaoBtn.className = 'mb-btn-wishlist';
+            selecaoBtn.href = cfg.selecaoUrl + '?ids=' + productIds.join(',');
+            selecaoBtn.target = '_blank';
+            selecaoBtn.rel = 'noopener';
+            selecaoBtn.innerHTML = '🛍️ Ver todos os produtos selecionados';
+            selecaoBtn.style.textDecoration = 'none';
+            selecaoBtn.style.display = 'block';
+            selecaoBtn.style.textAlign = 'center';
+            msgs.appendChild(selecaoBtn);
+          }
 
           var scrollTarget = msgEl || cardsEl;
           msgs.scrollTop = scrollTarget.offsetTop - msgs.offsetTop;
