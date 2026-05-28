@@ -144,10 +144,37 @@
 }
 
 .mb-carousel {
-  position: relative;
   width: 100%;
-  padding: 0 18px;
 }
+
+/* Setas acima do carrossel, alinhadas à direita */
+.mb-carousel-nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.mb-carousel-btn {
+  background: #fff;
+  border: 1.5px solid var(--mb-primary);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--mb-primary);
+  transition: background .15s, color .15s;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.mb-carousel-btn:hover { background: var(--mb-primary); color: #fff; }
+.mb-carousel-btn:disabled { opacity: .3; cursor: default; pointer-events: none; }
 
 .mb-cards-list {
   display: flex;
@@ -157,39 +184,11 @@
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  padding: 6px 4px 10px 4px;
-  /* esconde scrollbar mas mantém funcional */
+  padding: 4px 4px 12px 4px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .mb-cards-list::-webkit-scrollbar { display: none; }
-
-/* Setas de navegação */
-.mb-carousel-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 13px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.12);
-  transition: background .15s, box-shadow .15s;
-  padding: 0;
-  line-height: 1;
-  color: var(--mb-text);
-}
-.mb-carousel-btn:hover { background: var(--mb-primary); color: #fff; border-color: var(--mb-primary); }
-.mb-carousel-btn.prev { left: -10px; }
-.mb-carousel-btn.next { right: -10px; }
-.mb-carousel-btn:disabled { opacity: .3; cursor: default; pointer-events: none; }
 
 /* Card vertical — carrossel */
 .mb-product-card {

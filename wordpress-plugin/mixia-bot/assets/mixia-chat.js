@@ -382,21 +382,27 @@
       const carousel = document.createElement('div');
       carousel.className = 'mb-carousel';
 
+      // Nav com setas acima
+      const nav = document.createElement('div');
+      nav.className = 'mb-carousel-nav';
+
       const btnPrev = document.createElement('button');
-      btnPrev.className = 'mb-carousel-btn prev';
+      btnPrev.className = 'mb-carousel-btn';
       btnPrev.innerHTML = '&#8249;';
       btnPrev.setAttribute('aria-label', 'Anterior');
 
       const btnNext = document.createElement('button');
-      btnNext.className = 'mb-carousel-btn next';
+      btnNext.className = 'mb-carousel-btn';
       btnNext.innerHTML = '&#8250;';
-      btnNext.setAttribute('aria-label', 'Próximo');
+      btnNext.setAttribute('aria-label', 'Proximo');
+
+      nav.appendChild(btnPrev);
+      nav.appendChild(btnNext);
 
       const list = document.createElement('div');
       list.className = 'mb-cards-list';
       list.innerHTML = cardsHtml;
 
-      // Scroll por card (150px + 10px gap)
       var cardWidth = 160;
       btnPrev.addEventListener('click', function() {
         list.scrollBy({ left: -cardWidth * 2, behavior: 'smooth' });
@@ -405,9 +411,8 @@
         list.scrollBy({ left: cardWidth * 2, behavior: 'smooth' });
       });
 
-      carousel.appendChild(btnPrev);
+      carousel.appendChild(nav);
       carousel.appendChild(list);
-      carousel.appendChild(btnNext);
       wrapper.appendChild(carousel);
       msgs.appendChild(wrapper);
     }
@@ -536,11 +541,19 @@
 
           // Botão "Adicionar tudo ao carrinho"
           var cartItems = valid.map(function(p) {
-            var item = { id: p.product_id, qty: p.quantidade || 1 };
-            // Extrai variation_id da URL se existir
+            var item = { id: p.product_id, qty: 1 };
             if (p.add_to_cart_url) {
-              var m = p.add_to_cart_url.match(/variation_id=(\d+)/);
-              if (m) item.variation_id = parseInt(m[1], 10);
+              // Extrai variation_id
+              var mv = p.add_to_cart_url.match(/variation_id=(\d+)/);
+              if (mv) item.variation_id = parseInt(mv[1], 10);
+              // Extrai atributos da variação (attribute_pa_*)
+              var attrs = {};
+              var attrRe = /[?&](attribute_[^=]+)=([^&]*)/g;
+              var ma;
+              while ((ma = attrRe.exec(p.add_to_cart_url)) !== null) {
+                attrs[decodeURIComponent(ma[1])] = decodeURIComponent(ma[2]);
+              }
+              if (Object.keys(attrs).length > 0) item.attributes = attrs;
             }
             return item;
           }).filter(function(i) { return i.id; });

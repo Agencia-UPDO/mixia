@@ -76,8 +76,11 @@ function mixia_bot_add_to_cart()
         $product_id   = absint(isset($item['id'])           ? $item['id']           : 0);
         $qty          = max(1, intval(isset($item['qty'])    ? $item['qty']          : 1));
         $variation_id = absint(isset($item['variation_id']) ? $item['variation_id'] : 0);
+        $attributes   = (isset($item['attributes']) && is_array($item['attributes']))
+                        ? array_map('sanitize_text_field', $item['attributes'])
+                        : array();
         if ($product_id > 0) {
-            WC()->cart->add_to_cart($product_id, $qty, $variation_id);
+            WC()->cart->add_to_cart($product_id, $qty, $variation_id, $attributes);
         }
     }
 
