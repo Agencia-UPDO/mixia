@@ -387,6 +387,43 @@
     if (afterHtml.trim()) appendMsg(afterHtml.trim(), 'bot');
   }
 
+  // ── Força estilos das setas via JS (imune a tema WordPress) ─────────────────
+  function _styleCarouselBtn(btn) {
+    var p = btn.style;
+    var s = function(prop, val) { p.setProperty(prop, val, 'important'); };
+    s('display',          'flex');
+    s('align-items',      'center');
+    s('justify-content',  'center');
+    s('width',            '32px');
+    s('height',           '32px');
+    s('min-width',        '32px');
+    s('min-height',       '32px');
+    s('max-width',        '32px');
+    s('max-height',       '32px');
+    s('background',       '#ffffff');
+    s('border',           '2px solid #e63946');
+    s('border-radius',    '50%');
+    s('color',            '#e63946');
+    s('font-size',        '20px');
+    s('font-weight',      '700');
+    s('line-height',      '1');
+    s('padding',          '0');
+    s('cursor',           'pointer');
+    s('flex-shrink',      '0');
+    s('box-shadow',       '0 1px 4px rgba(0,0,0,.15)');
+    s('overflow',         'visible');
+    s('visibility',       'visible');
+    s('opacity',          '1');
+    btn.addEventListener('mouseenter', function() {
+      btn.style.setProperty('background', '#e63946', 'important');
+      btn.style.setProperty('color',      '#ffffff', 'important');
+    });
+    btn.addEventListener('mouseleave', function() {
+      btn.style.setProperty('background', '#ffffff', 'important');
+      btn.style.setProperty('color',      '#e63946', 'important');
+    });
+  }
+
   // ── Extrai variation_id e atributo do add_to_cart_url ──────────────────────
   function parseCartUrl(url) {
     if (!url) return { variation_id: 0, attributes: {} };
@@ -416,12 +453,14 @@
     btnPrev.innerHTML = '&#8249;';
     btnPrev.setAttribute('aria-label', 'Anterior');
     btnPrev.setAttribute('type', 'button');
+    _styleCarouselBtn(btnPrev);
 
     var btnNext = document.createElement('button');
     btnNext.className = 'mb-carousel-btn';
     btnNext.innerHTML = '&#8250;';
     btnNext.setAttribute('aria-label', 'Proximo');
     btnNext.setAttribute('type', 'button');
+    _styleCarouselBtn(btnNext);
 
     nav.appendChild(btnPrev);
     nav.appendChild(btnNext);
