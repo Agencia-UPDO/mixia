@@ -149,32 +149,45 @@
 
 /* Setas acima do carrossel, alinhadas à direita */
 .mb-carousel-nav {
-  display: flex;
+  display: flex !important;
   justify-content: flex-end;
   gap: 6px;
   margin-bottom: 6px;
 }
 
-.mb-carousel-btn {
-  background: #fff;
-  border: 1.5px solid var(--mb-primary);
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 17px;
-  font-weight: bold;
-  color: var(--mb-primary);
+/* Especificidade alta para sobrescrever tema WordPress */
+#mixia-bot-root .mb-carousel-btn {
+  background: #fff !important;
+  border: 1.5px solid var(--mb-primary) !important;
+  border-radius: 50% !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px !important;
+  max-height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  color: var(--mb-primary) !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12) !important;
   transition: background .15s, color .15s;
-  padding: 0;
-  line-height: 1;
-  flex-shrink: 0;
 }
-.mb-carousel-btn:hover { background: var(--mb-primary); color: #fff; }
-.mb-carousel-btn:disabled { opacity: .3; cursor: default; pointer-events: none; }
+#mixia-bot-root .mb-carousel-btn:hover {
+  background: var(--mb-primary) !important;
+  color: #fff !important;
+}
+#mixia-bot-root .mb-carousel-btn:disabled {
+  opacity: .3 !important;
+  cursor: default !important;
+  pointer-events: none !important;
+}
 
 .mb-cards-list {
   display: flex;

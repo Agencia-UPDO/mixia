@@ -263,6 +263,8 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
             if woo:
                 if not p.get("product_id") and woo.get("id"):
                     p["product_id"] = woo["id"]
+                if not p.get("variation_id") and woo.get("variation_id"):
+                    p["variation_id"] = woo["variation_id"]
                 # Aplica quantidade mínima do Display/variação
                 min_qty = woo.get("min_qty")
                 if min_qty and int(p.get("quantidade", 1)) < min_qty:
@@ -372,6 +374,7 @@ def _produtos_de_woo(woo_results: list[dict]) -> list[dict]:
             "em_estoque": True,
             "imagem": p.get("imagem") or "",
             "add_to_cart_url": url,
+            "variation_id": p.get("variation_id") or 0,
         })
 
     if not candidatos:

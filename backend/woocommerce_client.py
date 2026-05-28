@@ -76,6 +76,8 @@ def _formatar_produto(p: dict, variacao: dict | None = None) -> dict:
         "url": p.get("permalink", ""),
         "add_to_cart_url": add_to_cart,
     }
+    if variacao:
+        result["variation_id"] = variacao["id"]
     if min_qty:
         result["min_qty"] = min_qty
     return result

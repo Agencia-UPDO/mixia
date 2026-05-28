@@ -387,6 +387,19 @@
     if (afterHtml.trim()) appendMsg(afterHtml.trim(), 'bot');
   }
 
+  // ── Extrai variation_id e atributo do add_to_cart_url ──────────────────────
+  function parseCartUrl(url) {
+    if (!url) return { variation_id: 0, attributes: {} };
+    var m = url.match(/[?&]variation_id=(\d+)/);
+    var variationId = m ? parseInt(m[1], 10) : 0;
+    var attrs = {};
+    if (variationId) {
+      var a = url.match(/attribute_pa_formato-de-compra=([^&]+)/);
+      if (a) attrs['attribute_pa_formato-de-compra'] = decodeURIComponent(a[1]);
+    }
+    return { variation_id: variationId, attributes: attrs };
+  }
+
   // ── Constrói carrossel com setas ────────────────────────────────────────────
   function buildCarousel(produtos, cardsHtml) {
     var wrapper = document.createElement('div');
@@ -402,11 +415,13 @@
     btnPrev.className = 'mb-carousel-btn';
     btnPrev.innerHTML = '&#8249;';
     btnPrev.setAttribute('aria-label', 'Anterior');
+    btnPrev.setAttribute('type', 'button');
 
     var btnNext = document.createElement('button');
     btnNext.className = 'mb-carousel-btn';
     btnNext.innerHTML = '&#8250;';
     btnNext.setAttribute('aria-label', 'Proximo');
+    btnNext.setAttribute('type', 'button');
 
     nav.appendChild(btnPrev);
     nav.appendChild(btnNext);
@@ -431,6 +446,29 @@
     carousel.appendChild(nav);
     carousel.appendChild(list);
     wrapper.appendChild(carousel);
+
+    // Botão "Adicionar Tudo" — só quando temos a lista de produtos com dados
+    if (produtos && produtos.length > 0) {
+      var cartItems = produtos.map(function(p) {
+        var parsed = parseCartUrl(p.add_to_cart_url);
+        return {
+          id:           p.product_id || p.id,
+          qty:          p.quantidade || 1,
+          variation_id: parsed.variation_id,
+          attributes:   parsed.attributes
+        };
+      });
+
+      var addAllBtn = document.createElement('button');
+      addAllBtn.className = 'mb-btn-wishlist';
+      addAllBtn.setAttribute('type', 'button');
+      addAllBtn.innerHTML = '🛒 Adicionar Tudo Ao Carrinho';
+      addAllBtn.addEventListener('click', function() {
+        addAllToCart(cartItems, addAllBtn);
+      });
+      wrapper.appendChild(addAllBtn);
+    }
+
     return wrapper;
   }
 
