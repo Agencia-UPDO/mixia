@@ -146,6 +146,7 @@
 .mb-carousel {
   position: relative;
   width: 100%;
+  padding: 0 18px;
 }
 
 .mb-cards-list {

@@ -535,7 +535,15 @@
           msgs.appendChild(cardsEl);
 
           // Botão "Adicionar tudo ao carrinho"
-          var cartItems = valid.map(p => ({ id: p.product_id, qty: p.quantidade || 1 })).filter(i => i.id);
+          var cartItems = valid.map(function(p) {
+            var item = { id: p.product_id, qty: p.quantidade || 1 };
+            // Extrai variation_id da URL se existir
+            if (p.add_to_cart_url) {
+              var m = p.add_to_cart_url.match(/variation_id=(\d+)/);
+              if (m) item.variation_id = parseInt(m[1], 10);
+            }
+            return item;
+          }).filter(function(i) { return i.id; });
           if (cartItems.length > 0) {
             var cartBtn = document.createElement('button');
             cartBtn.className = 'mb-btn-wishlist';
