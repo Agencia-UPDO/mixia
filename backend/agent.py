@@ -270,6 +270,26 @@ def sanitizar_resposta(texto: str, woo_results: list[dict] | None = None) -> tup
                 min_qty = woo.get("min_qty")
                 if min_qty and int(p.get("quantidade", 1)) < min_qty:
                     p["quantidade"] = min_qty
+                # Copia estoque do WooCommerce para o produto (usado no cap abaixo)
+                if p.get("estoque") is None and woo.get("estoque") is not None:
+                    p["estoque"] = woo["estoque"]
+
+    # ── Cap: nunca recomendar quantidade maior que o estoque disponível ──
+    produtos_validos = []
+    for p in produtos:
+        estoque = p.get("estoque")
+        if estoque is not None:
+            try:
+                estoque_int = int(estoque)
+                if estoque_int <= 0:
+                    continue  # sem estoque — descarta
+                qty = int(p.get("quantidade", 1))
+                if qty > estoque_int:
+                    p["quantidade"] = estoque_int
+            except (ValueError, TypeError):
+                pass
+        produtos_validos.append(p)
+    produtos = produtos_validos
 
     total = 0.0
     for p in produtos:
@@ -365,12 +385,26 @@ def _produtos_de_woo(woo_results: list[dict]) -> list[dict]:
             continue
         min_qty = p.get("min_qty") or 1
         estoque = p.get("estoque")
+        # Não inclui produtos com estoque zerado
+        if estoque is not None:
+            try:
+                if int(estoque) <= 0:
+                    continue
+            except (ValueError, TypeError):
+                pass
+        # Quantidade inicial: min_qty mas nunca maior que o estoque
+        qty_inicial = max(1, min_qty)
+        if estoque is not None:
+            try:
+                qty_inicial = min(qty_inicial, int(estoque))
+            except (ValueError, TypeError):
+                pass
         candidatos.append({
             "product_id": p.get("id"),
             "nome": p.get("nome") or "",
             "formato": p.get("formato") or "Display",
             "preco": f"{preco:.2f}",
-            "quantidade": max(1, min_qty),
+            "quantidade": qty_inicial,
             "estoque": estoque,
             "em_estoque": True,
             "imagem": p.get("imagem") or "",
